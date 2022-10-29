@@ -128,5 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Mac empty file
+.DS_Store
+
 #data folder is too big for github
 archive/
