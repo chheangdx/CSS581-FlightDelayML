@@ -11,33 +11,19 @@ import warnings
 warnings.warn = warn
 
 flight_registry_file = "data/airport_registry.parquet"
-flight_data_file = "data/testData_2022"
+# flight_data_file = "data/testData_2022"
+flight_data_file = "data/testDataBinaryTarget_2022"
 # flight_data_file = "data/trainData_2018-2019"
 airport_translation_file = "data/translation_Origin"
 airline_translation_file = "data/translation_Airline"
 
-model_file = "models/final_models/model_logistic_regression.pkl"
+# model_file = "models/final_models/model_logistic_regression.pkl"
+model_file = "models/final_models/binary_model_naive_bayes.pkl"
 
 test=False
 
-# columns to predict on
-selectedFeatures = [
-    'Airline',
-    'Origin',
-    'Dest',
-    'CRSDepTime', 
-    'Distance', 
-    'Year', 
-    'Quarter', 
-    'Month', 
-    'DayofMonth', 
-    'DayOfWeek', 
-    'DepTimeBlk', 
-    'ArrTimeBlk', 
-    'DistanceGroup'
-    ]
-
 # target = 'BinArrDelayMinutes'
+target = 'BinaryArrDelayMinutes'
 
 #load flight registry
 flight_registry = pd.read_parquet(flight_registry_file, engine="fastparquet")
@@ -48,7 +34,10 @@ airport_translation_data = pd.read_parquet(airport_translation_file, engine="fas
 airline_translation_data = pd.read_parquet(airline_translation_file, engine="fastparquet")
 
 #load model
-model = pickle.load(open(model_file, 'rb'))\
+model = pickle.load(open(model_file, 'rb'))
+
+# columns to predict on
+selectedFeatures = model.feature_names_in_
 
 #### FUNCTIONS
 
@@ -128,13 +117,13 @@ def PredictBestFlight(model, features, flights):
     predictions = model.predict(X)
 
     predicted_data = flights
-    predicted_data['Pred_BinArrDelayMinutes'] = predictions
+    predicted_data['PredArrDelayMinutes'] = predictions
     
     #get recommended flights   
-    recommended_flights = predicted_data[predicted_data['Pred_BinArrDelayMinutes'] == predicted_data['Pred_BinArrDelayMinutes'].min()]
+    recommended_flights = predicted_data[predicted_data['PredArrDelayMinutes'] == predicted_data['PredArrDelayMinutes'].min()]
 
     #include actual delay in the return for analysis
-    Y=flights['BinArrDelayMinutes']
+    Y=flights[target]
 
     return {
         'recommended_flights': recommended_flights,
@@ -161,8 +150,8 @@ def DecodeToAirlineAndAirports(airline_translation, airport_translation, data):
         'Airline': airlines,
         'Origin': origins,
         'Dest': dests,
-        'Pred': data['Pred_BinArrDelayMinutes'],
-        'Actual': data['BinArrDelayMinutes']
+        'Pred': data['PredArrDelayMinutes'],
+        'Actual': data[target]
     })
     return translated_data
 
@@ -252,7 +241,7 @@ while True:
 
         #if we randomize the results before picking top 5, we are more likely to get a good result
         top_5 = prediction['recommended_flights'].sample(frac=1).head(5)
-        top_5 = top_5[['Airline', 'Origin', 'Dest', 'Pred_BinArrDelayMinutes', 'BinArrDelayMinutes']]
+        top_5 = top_5[['Airline', 'Origin', 'Dest', 'PredArrDelayMinutes', target]]
         top_5 = DecodeToAirlineAndAirports(airline_translation_data, airport_translation_data, top_5)
 
         print("There were " + str(len(flights)) + " available flights.")
