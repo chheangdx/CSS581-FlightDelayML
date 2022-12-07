@@ -134,3 +134,4 @@ dmypy.json
 #data folder is too big for github
 archive/
 data/
+**/models/*.pkl
